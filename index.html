@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>반복 공장: 루프의 마법</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --py-blue:#3776ab;--py-blue-lit:#5a9fd6;--py-yellow:#ffd343;
+  --neon:#3dffa2;--red:#ff6b5e;--ink:#e6edf3;--ink-dim:#8fa6b8;--ink-faint:#6a8597;
+  --s0:#0b1118;--s1:#111a24;--s2:#17232f;--line:#283c4e;--loop:#ff9e64;
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,"D2Coding","Nanum Gothic Coding",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Nanum Gothic",sans-serif;
+}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--s0);color:var(--ink);font-family:var(--sans);line-height:1.5}
+.plant{max-width:1100px;margin:0 auto;padding:0 14px 40px}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding:12px 0 10px}
+h1{font-family:var(--mono);font-size:clamp(1rem,3.2vw,1.3rem);font-weight:700}
+h1 em{font-style:normal;color:var(--py-yellow)}
+.modes{margin-left:auto;display:flex;border:1px solid var(--line);border-radius:2px;overflow:hidden}
+.modes button{background:var(--s1);color:var(--ink-dim);border:0;padding:8px 14px;font:700 .85rem var(--sans);cursor:pointer}
+.modes button+button{border-left:1px solid var(--line)}
+.modes button[aria-pressed="true"]{background:var(--py-yellow);color:#241c05}
+.layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px;margin-top:14px}
+.panel{background:var(--s2);border:1px solid var(--line);border-top:2px solid #33495e;border-radius:3px;padding:12px 14px}
+.panel+.panel{margin-top:14px}
+.ptitle{font-size:.8rem;font-weight:700;color:var(--ink-dim);margin-bottom:8px}
+.vars{display:flex;gap:10px;flex-wrap:wrap}
+.vmod{flex:1 1 150px;background:var(--s1);border:1px solid #2d4964;border-left:4px solid var(--py-blue);padding:8px 12px;display:flex;flex-direction:column;gap:6px}
+.vmod.big{border-left-color:var(--py-yellow);flex:1.3 1 170px}
+.vlab{font-family:var(--mono);font-size:.78rem;color:var(--py-blue-lit);font-weight:700}
+.vval{font-family:var(--mono);font-size:1.9rem;font-weight:700;line-height:1;color:#dcecfa}
+.vmod.big .vval{font-size:2.8rem;color:var(--py-yellow)}
+.vval small{font-size:.8rem;color:var(--ink-faint);font-weight:400;margin-left:6px}
+.dial{display:flex;gap:6px;align-items:center}
+.dial button{height:32px;min-width:40px;background:#0e1a24;border:1px solid #2d4964;border-radius:2px;color:var(--py-blue-lit);font:700 .95rem var(--mono);cursor:pointer;padding:0 8px}
+svg{display:block;width:100%;height:auto;max-height:70vh}
+.edge{fill:none;stroke:#2b4458;stroke-width:4}
+.back{fill:none;stroke:#5a3a24;stroke-width:4;stroke-dasharray:2 0}
+.trail{fill:none;stroke:var(--neon);stroke-width:4;stroke-linejoin:round;opacity:.85}
+.gate polygon{fill:#152434;stroke:var(--py-yellow);stroke-width:2}
+.gate text,.box text,.chip text{font-family:var(--mono);font-size:12.5px;fill:var(--ink);text-anchor:middle;dominant-baseline:middle;font-weight:700}
+.gate.t polygon{fill:#0f2a20;stroke:var(--neon)}
+.gate.f polygon{fill:#2a1512;stroke:var(--red)}
+.box rect{fill:#101b25;stroke:#3a566f;stroke-width:1.5}
+.box.on rect{fill:#0f2a20;stroke:var(--neon);stroke-width:2.5}
+.chip rect{fill:#0e1a24;stroke:var(--py-blue-lit);stroke-width:1.5}
+.chip.cur rect{fill:var(--py-yellow);stroke:var(--py-yellow)}
+.chip.cur text{fill:#241c05}
+.blk{fill:none;stroke:var(--py-blue);stroke-width:1.3;stroke-dasharray:6 5}
+.lbl{font-family:var(--sans);font-size:11px;fill:var(--ink-faint)}
+.lbl.loop{fill:var(--loop);font-weight:700}
+.tf{font-family:var(--mono);font-size:11px;font-weight:700}
+.tf.y{fill:#3fbf86}.tf.n{fill:#c9655b}
+.ball{fill:var(--py-yellow);stroke:#241c05;stroke-width:2}
+.code{background:#04090d;border:1px solid #1d3243;border-radius:2px;font-family:var(--mono);font-size:clamp(.82rem,2.6vw,.95rem);padding:8px 0;overflow-x:auto}
+.ln{display:flex;white-space:pre;padding:1px 10px 1px 0;border-left:4px solid transparent;color:#9fb6c8}
+.ln .no{width:2.4em;text-align:right;color:#33566c;margin-right:12px;flex:none}
+.ln.now{background:#2a2612;border-left-color:var(--py-yellow);color:#fff}
+.ln.jump{background:#2e1c10;border-left-color:var(--loop)}
+.k{color:#ff9e64}.s{color:#9fd88a}.n{color:var(--py-yellow)}.v{color:var(--py-blue-lit)}
+.ctrl{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.btn{border:1px solid var(--line);background:#16232f;color:var(--ink);font:700 .86rem var(--sans);padding:9px 14px;border-radius:2px;cursor:pointer}
+.btn.go{background:var(--py-yellow);border-color:var(--py-yellow);color:#241c05}
+.speed{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--ink-dim);margin-top:10px}
+.console{margin-top:12px;background:#04090d;border:1px solid #1d3243;font-family:var(--mono);padding:8px 12px;min-height:58px;max-height:180px;overflow-y:auto;font-size:.92rem}
+.console .p{color:var(--neon)}
+.log{font-size:.85rem;color:var(--ink-dim);list-style:none;counter-reset:s;max-height:220px;overflow-y:auto}
+.log li{counter-increment:s;padding:4px 0 4px 2.2em;position:relative;border-bottom:1px solid #1b2a37}
+.log li::before{content:counter(s);position:absolute;left:0;width:1.6em;text-align:right;font-family:var(--mono);color:#42586a}
+</style>
+</head>
+<body>
+<div class="plant">
+<header>
+  <h1>반복 공장: <em>루프의 마법</em></h1>
+  <div class="modes" role="group">
+    <button type="button" data-sc="wh" aria-pressed="true">while 공장</button>
+    <button type="button" data-sc="fr" aria-pressed="false">for 공장 · range</button>
+  </div>
+</header>
+<div class="layout">
+  <div>
+    <section class="panel">
+      <div class="ptitle">변수 추적기</div>
+      <div class="vars" id="vars"></div>
+    </section>
+    <section class="panel rail">
+      <svg id="svg"></svg>
+    </section>
+  </div>
+  <div>
+    <section class="panel">
+      <div class="ptitle">파이썬 코드</div>
+      <div class="code" id="code"></div>
+      <div class="ctrl">
+        <button type="button" class="btn go" id="run">▶ 끝까지 실행</button>
+        <button type="button" class="btn" id="step">한 단계 실행</button>
+        <button type="button" class="btn" id="reset">처음으로</button>
+      </div>
+      <label class="speed">속도 <input type="range" id="speed" min="1" max="5" value="2"></label>
+      <div class="console" id="console"></div>
+    </section>
+    <section class="panel">
+      <div class="ptitle">실행 경로 기록</div>
+      <ol class="log" id="log"></ol>
+    </section>
+  </div>
+</div>
+</div>
+<script>
+(function(){
+"use strict";
+var NS="http://www.w3.org/2000/svg";
+var $=function(id){return document.getElementById(id)};
+var V={limit:3,count:4};
+var mode="wh";
+var SC={
+ wh:{
+  vb:"0 0 430 440",
+  code:function(){return ['<span class="v">i</span> = <span class="n">0</span>','<span class="k">while</span> <span class="v">i</span> &lt; <span class="n">'+V.limit+'</span>:','    print(<span class="v">i</span>)','    <span class="v">i</span> += <span class="n">1</span>','print(<span class="s">"반복 종료"</span>)']},
+  draw:function(g){
+   edge(g,[[120,30],[120,290]]); back(g,[[120,290],[120,335],[30,335],[30,110],[56,110]]);
+   edge(g,[[184,110],[330,110],[330,400]]); blk(g,50,168,180,152,"루프 본체");
+   gate(g,"g",120,110,"i < "+V.limit); box(g,"body",120,210,"print(i)"); box(g,"inc",120,280,"i += 1"); box(g,"end",330,400,"반복 종료"); start(g,120,30,"i = 0");
+  },
+  build:function(){
+   var L=V.limit,i=0,S=[],first=true,n=0;
+   S.push({pts:[[120,30]],line:1,i:0,msg:'<code>i = 0</code> 저장'});
+   while(true){
+    var ok=i<L;
+    S.push({pts:first?[[120,110]]:[[120,335],[30,335],[30,110],[120,110]],line:2,gate:"g",res:ok,jump:first?0:4,msg:'조건 확인 <code>'+i+' < '+L+'</code> → '+(ok?'True':'False')});
+    if(!ok)break;
+    S.push({pts:[[120,210]],line:3,fire:"body",out:String(i),msg:'<code>print('+i+')</code>'});
+    i++; n++;
+    S.push({pts:[[120,280]],line:4,fire:"inc",i:i,iter:n,msg:'증감 연산 <code>i += 1</code>'});
+    first=false; if(n>50)break;
+   }
+   S.push({pts:[[184,110],[330,110],[330,400]],line:5,fire:"end",out:"반복 종료",msg:'반복 종료'}); return S;
+  }
+ },
+ fr:{
+  vb:"0 0 430 380",
+  code:function(){return ['<span class="k">for</span> <span class="v">i</span> <span class="k">in</span> range(<span class="n">'+V.count+'</span>):','    print(<span class="v">i</span>)','print(<span class="s">"반복 종료"</span>)']},
+  draw:function(g){
+   for(var k=0;k<V.count;k++){
+    var G=mk("g",{"class":"chip",id:"c"+k},g); mk("rect",{x:196+k*27,y:26,width:23,height:23,rx:2},G); mk("text",{x:207.5+k*27,y:38},G).textContent=k;
+   }
+   edge(g,[[120,30],[120,210]]); back(g,[[120,210],[120,260],[30,260],[30,110],[56,110]]);
+   edge(g,[[184,110],[330,110],[330,330]]); blk(g,50,170,180,72,"루프 본체");
+   gate(g,"g",120,110,"다음 번호?"); box(g,"body",120,205,"print(i)"); box(g,"end",330,330,"반복 종료"); start(g,120,30,"");
+  },
+  build:function(){
+   var C=V.count,S=[];
+   for(var k=0;k<=C;k++){
+    var has=k<C;
+    S.push({pts:k===0?[[120,30],[120,110]]:[[120,260],[30,260],[30,110],[120,110]],line:1,gate:"g",res:has,jump:k===0?0:2,take:has?k:-1,i:has?k:undefined,iter:has?k+1:undefined,msg:has?'range에서 '+k+' 꺼냄':'번호 소진'});
+    if(has)S.push({pts:[[120,205]],line:2,fire:"body",out:String(k),msg:'<code>print('+k+')</code>'});
+   }
+   S.push({pts:[[184,110],[330,110],[330,330]],line:3,fire:"end",out:"반복 종료",msg:'반복 종료'}); return S;
+  }
+ }
+};
+function mk(t,a,p){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+function pts(l){return l.map(function(p){return p.join(",")}).join(" ");}
+function edge(g,l){mk("polyline",{"class":"edge",points:pts(l)},g);}
+function back(g,l){mk("polyline",{"class":"back",points:pts(l)},g);var a=l[l.length-1];mk("polygon",{points:pts([[a[0],a[1]],[a[0]-10,a[1]-6],[a[0]-10,a[1]+6]]),fill:"#8a5a34"},g);}
+function blk(g,x,y,w,h,t){mk("rect",{"class":"blk",x:x,y:y,width:w,height:h,rx:3},g);mk("text",{"class":"lbl",x:x+6,y:y+h-6},g).textContent=t;}
+function gate(g,id,x,y,t){var G=mk("g",{"class":"gate",id:id},g);mk("polygon",{points:pts([[x,y-32],[x+64,y],[x,y+32],[x-64,y]])},G);mk("text",{x:x,y:y},G).textContent=t;}
+function box(g,id,x,y,t){var G=mk("g",{"class":"box",id:id},g);mk("rect",{x:x-56,y:y-17,width:112,height:34,rx:2},G);mk("text",{x:x,y:y},G).textContent=t;}
+function start(g,x,y,t){mk("rect",{x:x-6,y:y-6,width:12,height:12,fill:"#2b4458"},g);}
+var svg=$("svg"),trailEl,ballEl,steps,si,pos,trail,queue,moving,auto,timer,raf,last,T;
+function speedPx(){return [0,60,130,220,340,520][+$("speed").value];}
+function reset(){
+ cancelAnimationFrame(raf);clearTimeout(timer);moving=false;auto=false;
+ var sc=SC[mode]; svg.innerHTML="";svg.setAttribute("viewBox",sc.vb); sc.draw(svg);
+ steps=sc.build();si=0;pos=steps[0].pts[0].slice();trail=[pos.slice()];
+ trailEl=mk("polyline",{"class":"trail",points:pts(trail)},svg);
+ ballEl=mk("circle",{"class":"ball",r:9,cx:pos[0],cy:pos[1]},svg);
+ $("code").innerHTML=sc.code().map(function(h,i){return '<div class="ln"><span class="no">'+(i+1)+'</span>'+h+'</div>';}).join("");
+ $("console").innerHTML="";$("log").innerHTML="";T={i:undefined,iter:0,hist:[]};paintVars();ui();
+}
+function ui(){ var done=si>=steps.length; $("run").disabled=done||auto; $("step").disabled=done;}
+function advance(){ if(moving||si>=steps.length)return; queue=steps[si].pts.slice();moving=true;last=null;raf=requestAnimationFrame(tick);}
+function tick(t){
+ if(last===null)last=t; var budget=speedPx()*Math.min(.05,(t-last)/1000);last=t;
+ while(budget>0&&queue.length){
+  var q=queue[0],dx=q[0]-pos[0],dy=q[1]-pos[1],d=Math.hypot(dx,dy);
+  if(d<=budget){pos=q.slice();trail.push(q.slice());queue.shift();budget-=d;}
+  else{pos[0]+=dx/d*budget;pos[1]+=dy/d*budget;budget=0;}
+ }
+ ballEl.setAttribute("cx",pos[0]);ballEl.setAttribute("cy",pos[1]);
+ trailEl.setAttribute("points",pts(trail.concat([pos])));
+ if(queue.length)raf=requestAnimationFrame(tick);else arrive();
+}
+function arrive(){
+ var st=steps[si];moving=false;
+ $("code").querySelectorAll(".ln").forEach(function(l){l.classList.remove("now","jump")});
+ var L=$("code").querySelectorAll(".ln")[st.line-1]; L.classList.add("now"); if(st.jump)L.classList.add("jump");
+ if(st.gate){var g=$(st.gate);g.classList.remove("t","f");g.classList.add(st.res?"t":"f");}
+ if(st.fire)$(st.fire).classList.add("on");
+ if(st.take!==undefined){svg.querySelectorAll(".chip.cur").forEach(function(c){c.classList.remove("cur")});if(st.take>=0)$("c"+st.take).classList.add("cur");}
+ if(st.i!==undefined){T.i=st.i;T.hist.push(st.i);} if(st.iter!==undefined)T.iter=st.iter;
+ if(st.out){var d=document.createElement("div");d.className="p";d.textContent=st.out;$("console").appendChild(d);}
+ var li=document.createElement("li");li.innerHTML='<code>'+st.line+'줄</code>: '+st.msg;$("log").appendChild(li);
+ si++; if(auto&&si<steps.length)timer=setTimeout(advance,300); ui();
+}
+function paintVars(){
+ var k=mode==="wh"?"limit":"count";
+ $("vars").innerHTML='<div class="vmod big"><span class="vlab">i</span><span class="vval">'+(T.i===undefined?"—":T.i)+'</span></div><div class="vmod"><span class="vlab">'+k+'</span><span class="vval">'+V[k]+'</span><div class="dial"><button type="button" id="m">−</button><button type="button" id="p">+</button></div></div><div class="vmod"><span class="vlab">반복횟수</span><span class="vval">'+T.iter+'</span></div>';
+}
+$("vars").onclick=function(e){
+ var k=mode==="wh"?"limit":"count"; if(e.target.id==="m")V[k]=Math.max(0,V[k]-1); else if(e.target.id==="p")V[k]=Math.min(8,V[k]+1); else return; reset();
+};
+$("run").onclick=function(){auto=true;ui();advance();}; $("step").onclick=function(){auto=false;ui();advance();}; $("reset").onclick=reset;
+document.querySelectorAll(".modes button").forEach(function(b){
+ b.onclick=function(){mode=b.dataset.sc;document.querySelectorAll(".modes button").forEach(function(x){x.setAttribute("aria-pressed",x===b)});reset();};
+});
+reset();
+})();
+</script>
+</body>
+</html>
